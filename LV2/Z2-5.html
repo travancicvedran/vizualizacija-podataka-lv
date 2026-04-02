@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <style>
+    .axis {
+      font: 10px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+    
+    .line {
+      fill: none;
+      stroke-width: 2;
+    }
+  </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+  <script>
+    var data = [
+      {
+        "Godina": "2007.",
+        "Broj putnika": 162.74,
+        "Broj zrakoplova": 3.477
+      },
+      {
+        "Godina": "2008.",
+        "Broj putnika": 111.864,
+        "Broj zrakoplova": 2.53
+      },
+      {
+        "Godina": "2009.",
+        "Broj putnika": 113.567,
+        "Broj zrakoplova": 2.759
+      },
+      {
+        "Godina": "2010.",
+        "Broj putnika": 61.855,
+        "Broj zrakoplova": 2.017
+      },
+      {
+        "Godina": "2011.",
+        "Broj putnika": 84.713,
+        "Broj zrakoplova": 2.68
+      },
+      {
+        "Godina": "2012.",
+        "Broj putnika": 77.082,
+        "Broj zrakoplova": 2.29
+      },
+      {
+        "Godina": "2013.",
+        "Broj putnika": 142.975,
+        "Broj zrakoplova": 2.653
+      },
+      {
+        "Godina": "2014.",
+        "Broj putnika": 106.235,
+        "Broj zrakoplova": 2.378
+      },
+      {
+        "Godina": "2015.",
+        "Broj putnika": 139.718,
+        "Broj zrakoplova": 4.014
+      },
+      {
+        "Godina": "2016.",
+        "Broj putnika": 145.297,
+        "Broj zrakoplova": 4.146
+      }
+    ];
+
+    // Omjer putnika po zrakoplovu
+    data.forEach(function(d) {
+      d["Omjer"] = (d["Broj putnika"] / d["Broj zrakoplova"]).toFixed(2);
+    });
+
+    var margin = { top: 50, bottom: 50, left: 60, right: 200 };
+    var width = 900 - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
+
+    // X skala (vrijeme)
+    var x = d3.scalePoint()
+      .domain(data.map(function(d) { return d.Godina; }))
+      .range([0, width])
+      .padding(0.5);
+
+    // Y skale za različite skupove podataka
+    var yPutnika = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return d["Broj putnika"]; }) + 20])
+      .range([height, 0]);
+
+    var yZrakoplova = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return d["Broj zrakoplova"]; }) + 1])
+      .range([height, 0]);
+
+    var yOmjer = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return d["Omjer"]; }) + 10])
+      .range([height, 0]);
+
+    // SVG spremnik
+    var svg = d3.select("body")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .style("background-color", "lightblue")
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // X os
+    var xAxis = d3.axisBottom(x);
+    svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .selectAll("text")
+      .style("text-anchor", "middle");
+
+    // Y os za broj putnika (lijeva strana)
+    var yAxisLeft = d3.axisLeft(yPutnika);
+    svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxisLeft);
+
+    // Y os za broj zrakoplova (desna strana)
+    var yAxisRight = d3.axisRight(yZrakoplova);
+    svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + width + ", 0)")
+      .call(yAxisRight);
+
+    // Naslov
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", -10)
+      .attr("text-anchor", "middle")
+      .style("font-size", "16px")
+      .style("font-weight", "bold")
+      .text("Usporedba prometa u Zračnoj luci Rijeka (2007.-2016.)");
+
+    // Naziv x osi
+    svg.append("text")
+      .attr("class", "x label")
+      .attr("text-anchor", "middle")
+      .attr("x", width / 2)
+      .attr("y", height + 40)
+      .style("font-size", "12px")
+      .text("Godina");
+
+    // Naziv lijeve y osi (broj putnika)
+    svg.append("text")
+      .attr("class", "y label")
+      .attr("text-anchor", "middle")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", -40)
+      .style("font-size", "12px")
+      .style("fill", "black")
+      .text("Broj putnika (tisuće)");
+
+    // Naziv desne y osi (broj zrakoplova)
+    svg.append("text")
+      .attr("class", "y label")
+      .attr("text-anchor", "middle")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", 690)
+      .style("font-size", "12px")
+      .style("fill", "black")
+      .text("Broj zrakoplova (tisuće)");
+
+    // Linija 1: Broj putnika
+    var linePutnika = d3.line()
+      .x(function(d) { return x(d.Godina); })
+      .y(function(d) { return yPutnika(d["Broj putnika"]); });
+    
+    svg.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", linePutnika)
+      .attr("stroke", "blue")
+      .attr("stroke-width", 2)
+      .attr("fill", "none");
+
+    // Linija 2: Broj zrakoplova
+    var lineZrakoplova = d3.line()
+      .x(function(d) { return x(d.Godina); })
+      .y(function(d) { return yZrakoplova(d["Broj zrakoplova"]); });
+    
+    svg.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", lineZrakoplova)
+      .attr("stroke", "red")
+      .attr("stroke-width", 2)
+      .attr("fill", "none");
+
+    // Linija 3: Omjer putnika po zrakoplovu
+    var lineOmjer = d3.line()
+      .x(function(d) { return x(d.Godina); })
+      .y(function(d) { return yOmjer(d["Omjer"]); });
+    
+    svg.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", lineOmjer)
+      .attr("stroke", "green")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "5,5")
+      .attr("fill", "none");
+
+    // Legenda
+    var legend = svg.append("g")
+      .attr("class", "legend")
+      .attr("transform", "translate(" + (width + 50) + ", 0)");
+
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", 15)
+      .attr("height", 15)
+      .attr("fill", "blue");
+    
+    legend.append("text")
+      .attr("x", 20)
+      .attr("y", 12)
+      .style("font-size", "11px")
+      .text("Broj putnika (tisuće)");
+
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("y", 25)
+      .attr("width", 15)
+      .attr("height", 15)
+      .attr("fill", "red");
+    
+    legend.append("text")
+      .attr("x", 20)
+      .attr("y", 37)
+      .style("font-size", "11px")
+      .text("Broj zrakoplova (tisuće)");
+
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("y", 50)
+      .attr("width", 15)
+      .attr("height", 15)
+      .attr("fill", "green");
+    
+    legend.append("text")
+      .attr("x", 20)
+      .attr("y", 62)
+      .style("font-size", "11px")
+      .text("Omjer putnika/zrakoplovu");
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <style>
+    .axis {
+      font: 10px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+  </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+  <script>
+    var data = [
+      {
+        "Godina": "2007.",
+        "Broj putnika": 162.74,
+        "Broj zrakoplova": 3.477
+      },
+      {
+        "Godina": "2008.",
+        "Broj putnika": 111.864,
+        "Broj zrakoplova": 2.53
+      },
+      {
+        "Godina": "2009.",
+        "Broj putnika": 113.567,
+        "Broj zrakoplova": 2.759
+      },
+      {
+        "Godina": "2010.",
+        "Broj putnika": 61.855,
+        "Broj zrakoplova": 2.017
+      },
+      {
+        "Godina": "2011.",
+        "Broj putnika": 84.713,
+        "Broj zrakoplova": 2.68
+      },
+      {
+        "Godina": "2012.",
+        "Broj putnika": 77.082,
+        "Broj zrakoplova": 2.29
+      },
+      {
+        "Godina": "2013.",
+        "Broj putnika": 142.975,
+        "Broj zrakoplova": 2.653
+      },
+      {
+        "Godina": "2014.",
+        "Broj putnika": 106.235,
+        "Broj zrakoplova": 2.378
+      },
+      {
+        "Godina": "2015.",
+        "Broj putnika": 139.718,
+        "Broj zrakoplova": 4.014
+      },
+      {
+        "Godina": "2016.",
+        "Broj putnika": 145.297,
+        "Broj zrakoplova": 4.146
+      },
+      {
+        "Godina": "2017.",
+        "Broj putnika": 142.111,
+        "Broj zrakoplova": 4.937
+      },
+      {
+        "Godina": "2018.",
+        "Broj putnika": 183.606,
+        "Broj zrakoplova": 5.46
+      }
+    ]
+
+    var margin = { top: 50, bottom: 50, left: 40, right: 20 };
+    var width = 500 - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
+    var barPadding = 4;
+    var barWidth = width / data.length - barPadding;
+
+    // X os
+    var x = d3.scaleBand()
+      .domain(data.map(function(d) { return d.Godina; }))
+      .range([0, width])
+      .padding(0.1);
+    var xAxis = d3.axisBottom(x)
+
+    // Y os
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return d["Broj putnika"]+40; })])
+      .range([height, 0]);
+    var yAxis = d3.axisLeft(y)
+
+    // Pozadina
+    var svg = d3.select("body")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.bottom + margin.top)
+      .style("background-color", "lightblue")
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Rubovi
+    svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .selectAll("text")
+      .style("text-anchor", "middle");
+      
+    svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+
+    // Naslov
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", -10)
+      .attr("text-anchor", "middle")
+      .style("font-size", "16px")
+      .style("font-weight", "bold")
+      .text("Broj putnika u Zračnoj luci Rijeka (2007.-2018.)");
+
+    // Naziv x osi
+    svg.append("text")
+    .attr("class", "x label")
+    .attr("text-anchor", "middle")
+    .attr("x", width / 2)
+    .attr("y", height + 40)
+    .style("font-size", "12px")
+    .text("Godina");
+
+    // Naziv y osi
+    svg.append("text")
+    .attr("class", "y label")
+    .attr("text-anchor", "middle")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height+370)
+    .attr("y", 15)
+    .style("font-size", "12px")
+    .style("fill", "black")
+    .text("Broj putnika");
+
+    // Stupčasti dijagram
+    var barchart = svg.selectAll("rect")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("x", function(d) { return x(d.Godina); })
+      .attr("y", function(d) { return y(d["Broj putnika"]); })
+      .attr("height", function(d) { return height - y(d["Broj putnika"]); })
+      .attr("width", x.bandwidth())
+      .attr("fill", "steelblue")
+
+    // Vrijednosti iznad stupaca
+    svg.selectAll("text.value")
+      .data(data)
+      .enter()
+      .append("text")
+      .attr("x", function(d) { return x(d.Godina) + x.bandwidth() / 2; })
+      .attr("y", function(d) { return y(d["Broj putnika"]) - 5; })
+      .attr("text-anchor", "middle")
+      .style("font-size", "10px")
+      .style("fill", "black")
+      .text(function(d) { return d["Broj putnika"]; });
+
+  </script>
+</body>

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <style>
+    .axis {
+      font: 10px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+    
+    .line {
+      fill: none;
+      stroke: steelblue;
+      stroke-width: 2;
+    }
+  </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+  <script>
+    
+    var data = [
+      { "datum": "2018-01-01", "broj_putnika": 5200, "mjeseci": "Siječanj" },
+      { "datum": "2018-02-01", "broj_putnika": 4800, "mjeseci": "Veljača" },
+      { "datum": "2018-03-01", "broj_putnika": 6200, "mjeseci": "Ožujak" },
+      { "datum": "2018-04-01", "broj_putnika": 8900, "mjeseci": "Travanj" },
+      { "datum": "2018-05-01", "broj_putnika": 15400, "mjeseci": "Svibanj" },
+      { "datum": "2018-06-01", "broj_putnika": 28900, "mjeseci": "Lipanj" },
+      { "datum": "2018-07-01", "broj_putnika": 35200, "mjeseci": "Srpanj" },
+      { "datum": "2018-08-01", "broj_putnika": 38100, "mjeseci": "Kolovoz" },
+      { "datum": "2018-09-01", "broj_putnika": 24700, "mjeseci": "Rujan" },
+      { "datum": "2018-10-01", "broj_putnika": 13200, "mjeseci": "Listopad" },
+      { "datum": "2018-11-01", "broj_putnika": 7300, "mjeseci": "Studeni" },
+      { "datum": "2018-12-01", "broj_putnika": 5800, "mjeseci": "Prosinac" }
+    ];
+    
+    // Parsiranje datuma
+    var parseDate = d3.timeParse("%Y-%m-%d");
+    data.forEach(function(d) {
+      d.datum = parseDate(d.datum);
+    });
+    
+    var margin = { top: 50, bottom: 70, left: 60, right: 30 };
+    var width = 800 - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
+    
+    // X skala za vrijeme
+    var x = d3.scaleTime()
+      .domain(d3.extent(data, function(d) { return d.datum; }))
+      .range([0, width]);
+    
+    // Y skala za broj putnika
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return d.broj_putnika; }) + 5000])
+      .range([height, 0]);
+    
+    // SVG spremnik
+    var svg = d3.select("body")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.bottom + margin.top)
+      .style("background-color", "lightblue")
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
+    // X os s datumima
+    var xAxis = d3.axisBottom(x)
+      .ticks(d3.timeMonth.every(1))
+      .tickFormat(d3.timeFormat("%b"));
+    
+    svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .selectAll("text")
+      .style("text-anchor", "middle")
+      .attr("transform", "rotate(-45)")
+      .style("font-size", "11px");
+    
+    // Y os
+    var yAxis = d3.axisLeft(y)
+      .ticks(10)
+      .tickFormat(function(d) { return d; });
+    
+    svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+    
+    // Naslov
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", -20)
+      .attr("text-anchor", "middle")
+      .style("font-size", "16px")
+      .style("font-weight", "bold")
+      .text("Mjesečni promet putnika u Zračnoj luci Rijeka - 2018. godina");
+    
+    // Naziv x osi
+    svg.append("text")
+      .attr("class", "x label")
+      .attr("text-anchor", "middle")
+      .attr("x", width / 2)
+      .attr("y", height + 50)
+      .style("font-size", "12px")
+      .text("Vrijeme");
+    
+    // Naziv y osi
+    svg.append("text")
+      .attr("class", "y label")
+      .attr("text-anchor", "middle")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", -45)
+      .style("font-size", "12px")
+      .style("fill", "black")
+      .text("Broj putnika");
+    
+    // Linijski graf
+    var valueline = d3.line()
+      .x(function(d) { return x(d.datum); })
+      .y(function(d) { return y(d.broj_putnika); });
+    
+    svg.append("path")
+      .attr("class", "line")
+      .attr("d", valueline(data))
+      .style("stroke", "blue")
+      .style("stroke-width", 3)
+      .style("fill", "none");
+    
+  </script>
+</body>
+
+</html>
