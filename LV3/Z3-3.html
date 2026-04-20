@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+    <title>Z3-3</title>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+<script>
+var widthSVG = 1000;
+var heightSVG = 500;
+var widthrect = 100;
+var heightrect = 100;
+
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", widthSVG)
+    .attr("height", heightSVG)
+
+var rect = svg.append("rect")
+    .attr("x", widthSVG - widthrect)
+    .attr("y", heightSVG - heightrect)
+    .attr("width", widthrect)
+    .attr("height", heightrect)
+    .attr("fill", "blue");
+
+setTimeout(function() {
+    rect.transition()
+        .duration(1000)
+        .attr("transform", "translate(" + (-(widthSVG - widthrect)) + ", 0)")
+        .each("end", function() {
+            rect.transition()
+                .duration(1000)
+                .attr("transform", "translate(" + (-(widthSVG - widthrect)) + ", " + (-(heightSVG - heightrect)) + ")");
+        });
+}, 1000);
+
+</script>
+</body>
+</html>

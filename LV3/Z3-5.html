@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Sunčev sustav - D3 verzija</title>
+  <!-- D3.js biblioteka -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    /* Potpuno crna pozadina, bez ikakvih dodataka */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      background: #000000;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* SVG preko cijelog ekrana */
+    #solar-svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+    }
+
+    /* Zvijezde: jednostavne bijele točkice */
+    .star {
+      fill: #ffffff;
+    }
+
+    /* Sunce: čvrsta boja, bez sjaja */
+    .sun {
+      fill: #FDB813;
+    }
+
+    /* Planeti: svaki ima svoju boju definiranu inline ili klasom */
+    .planet {
+      /* boja se postavlja direktno na element */
+    }
+  </style>
+</head>
+<body>
+  <svg id="solar-svg"></svg>
+
+  <script>
+    (function() {
+      // =============================================
+      // MINIMALNI SUNČEV SUSTAV S ZVIJEZDAMA (D3.js)
+      // - Potpuno ista pojava kao canvas verzija
+      // - Crna pozadina, bijele zvijezde, Sunce i planeti
+      // - Nema teksta, nema UI elemenata, nema orbita
+      // - 2D kružne putanje, animacija temeljena na vremenu
+      // =============================================
+
+      // --- Parametri simulacije ---
+      const EARTH_ORBIT_SECONDS = 7.0;  // Zemlja napravi puni krug za 7 sekundi
+
+      // --- Podaci o planetima (isti kao u canvas verziji) ---
+      const planetsData = [
+        { name: "Merkur", orbitRad: 70,   size: 4.0,  period: 0.241, color: "#b0b0b0" },
+        { name: "Venera", orbitRad: 98,   size: 5.5,  period: 0.615, color: "#e0c080" },
+        { name: "Zemlja", orbitRad: 128,  size: 6.0,  period: 1.000, color: "#4fa8e0" },
+        { name: "Mars",   orbitRad: 158,  size: 5.0,  period: 1.880, color: "#d46a3c" },
+        { name: "Jupiter",orbitRad: 215,  size: 13.0, period: 11.86, color: "#c9aa6e" },
+        { name: "Saturn", orbitRad: 268,  size: 11.0, period: 29.46, color: "#e2c87a" },
+        { name: "Uran",   orbitRad: 320,  size: 8.5,  period: 84.01, color: "#7ad0d0" },
+        { name: "Neptun", orbitRad: 368,  size: 8.2,  period: 164.8, color: "#4f7fe0" }
+      ];
+
+      // Sunce
+      const SUN_RADIUS = 32;
+      const SUN_COLOR = "#FDB813";
+
+      // --- Parametri prozora ---
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+      let centerX = width / 2;
+      let centerY = height / 2;
+
+      // --- Kutne brzine (rad/sekunda) za svaki planet ---
+      const angularSpeeds = planetsData.map(p => (2 * Math.PI) / (p.period * EARTH_ORBIT_SECONDS));
+
+      // --- Početni kutovi (malo razmaknuti radi ljepše početne slike) ---
+      let angles = planetsData.map((_, idx) => (idx * 2 * Math.PI) / planetsData.length);
+
+      // --- Varijable za animaciju (vrijeme) ---
+      let lastTimestamp = null;
+      let animationFrameId = null;
+
+      // --- Selektori D3 ---
+      const svg = d3.select("#solar-svg");
+
+      // ========================
+      // 1. FUNKCIJE ZA ZVIJEZDE
+      // ========================
+      let starsGroup = null;
+
+      // Generira nasumične pozicije zvijezda unutar trenutnih dimenzija
+      function generateStarPositions() {
+        const stars = [];
+        const STAR_COUNT = 400;
+        for (let i = 0; i < STAR_COUNT; i++) {
+          stars.push({
+            x: Math.random() * width,
+            y: Math.random() * height
+          });
+        }
+        return stars;
+      }
+
+      // Iscrtava zvijezde (briše postojeće i stvara nove)
+      function renderStars() {
+        // Ukloni postojeću grupu zvijezda ako postoji
+        if (starsGroup) starsGroup.remove();
+        
+        // Stvori novu grupu
+        starsGroup = svg.append("g").attr("class", "stars-group");
+        
+        // Generiraj pozicije
+        const starPositions = generateStarPositions();
+        
+        // Dodaj krugove (sve iste veličine 1.2px, bijele)
+        starsGroup.selectAll(".star")
+          .data(starPositions)
+          .enter()
+          .append("circle")
+          .attr("class", "star")
+          .attr("cx", d => d.x)
+          .attr("cy", d => d.y)
+          .attr("r", 1.2);
+      }
+
+      // ========================
+      // 2. SUNCE I PLANETI (statički dio)
+      // ========================
+      let sunCircle = null;
+      let planetGroup = null;
+      let planetCircles = null;
+
+      function initSunAndPlanets() {
+        // Izbriši sve postojeće elemente osim zvijezda (ako već postoji grupa planeta)
+        svg.select(".sun-group").remove();
+        svg.select(".planets-group").remove();
+        
+        // Sunce grupa
+        const sunGroup = svg.append("g").attr("class", "sun-group");
+        sunCircle = sunGroup.append("circle")
+          .attr("class", "sun")
+          .attr("r", SUN_RADIUS)
+          .attr("fill", SUN_COLOR)
+          .attr("cx", centerX)
+          .attr("cy", centerY);
+        
+        // Planeti grupa
+        planetGroup = svg.append("g").attr("class", "planets-group");
+        
+        // Stvori jedan krug za svaki planet, spremi ih u izbor
+        planetCircles = planetGroup.selectAll(".planet")
+          .data(planetsData)
+          .enter()
+          .append("circle")
+          .attr("class", "planet")
+          .attr("r", d => d.size)
+          .attr("fill", d => d.color)
+          .attr("cx", (d, i) => {
+            // Početna pozicija prema početnom kutu
+            const angle = angles[i];
+            return centerX + d.orbitRad * Math.cos(angle);
+          })
+          .attr("cy", (d, i) => {
+            const angle = angles[i];
+            return centerY + d.orbitRad * Math.sin(angle);
+          });
+      }
+
+      // ========================
+      // 3. AŽURIRANJE POZICIJA PLANETA (tijekom animacije)
+      // ========================
+      function updatePlanetPositions() {
+        if (!planetCircles) return;
+        
+        // Ažuriraj svaki planet: izračunaj novi x,y na temelju trenutnog kuta
+        planetCircles.each(function(d, i) {
+          const angle = angles[i];
+          const x = centerX + d.orbitRad * Math.cos(angle);
+          const y = centerY + d.orbitRad * Math.sin(angle);
+          d3.select(this)
+            .attr("cx", x)
+            .attr("cy", y);
+        });
+      }
+
+      // ========================
+      // 4. AŽURIRANJE KUTOVA NA TEMELJU PROTEKLOG VREMENA
+      // ========================
+      function updateAngles(deltaSec) {
+        if (deltaSec > 0.05) deltaSec = 0.05; // ograničenje radi dužih pauza
+        for (let i = 0; i < planetsData.length; i++) {
+          angles[i] += angularSpeeds[i] * deltaSec;
+          // Održavanje u rasponu [0, 2PI] – nije nužno, ali uredno
+          if (angles[i] > 2 * Math.PI) angles[i] -= 2 * Math.PI;
+        }
+      }
+
+      // ========================
+      // 5. ANIMACIJSKA PETLJA (requestAnimationFrame + delta time)
+      // ========================
+      function animationFrame(nowMs) {
+        if (lastTimestamp === null) {
+          lastTimestamp = nowMs;
+          animationFrameId = requestAnimationFrame(animationFrame);
+          return;
+        }
+        
+        let deltaMs = Math.min(100, nowMs - lastTimestamp);
+        let deltaSec = deltaMs / 1000;
+        
+        if (deltaSec > 0) {
+          updateAngles(deltaSec);
+          updatePlanetPositions();
+        }
+        
+        lastTimestamp = nowMs;
+        animationFrameId = requestAnimationFrame(animationFrame);
+      }
+
+      // ========================
+      // 6. RESPONSIVE – PRILAGODBA PROZORA I REGENERACIJA ZVIJEZDA
+      // ========================
+      function handleResize() {
+        // Ažuriraj dimenzije
+        width = window.innerWidth;
+        height = window.innerHeight;
+        centerX = width / 2;
+        centerY = height / 2;
+        
+        // Postavi veličinu SVG-a (ako nije već postavljeno preko CSS-a, ali bolje i atributi)
+        svg.attr("width", width).attr("height", height);
+        
+        // Ponovno generiraj zvijezde (nove pozicije na novoj površini)
+        renderStars();
+        
+        // Pomakni Sunce na novi centar
+        if (sunCircle) {
+          sunCircle.attr("cx", centerX).attr("cy", centerY);
+        }
+        
+        // Ponovno izračunaj pozicije planeta prema novom centru (kutovi ostaju isti)
+        if (planetCircles) {
+          planetCircles.each(function(d, i) {
+            const angle = angles[i];
+            const x = centerX + d.orbitRad * Math.cos(angle);
+            const y = centerY + d.orbitRad * Math.sin(angle);
+            d3.select(this).attr("cx", x).attr("cy", y);
+          });
+        }
+      }
+
+      // ========================
+      // 7. INICIJALIZACIJA
+      // ========================
+      function init() {
+        // Postavi dimenzije SVG-a
+        svg.attr("width", width).attr("height", height);
+        
+        // 1. Zvijezde (nasumične bijele točkice)
+        renderStars();
+        
+        // 2. Sunce i planeti
+        initSunAndPlanets();
+        
+        // 3. Pokreni animaciju
+        lastTimestamp = null;
+        animationFrameId = requestAnimationFrame(animationFrame);
+        
+        // 4. Pridruži event listener za promjenu veličine prozora
+        window.addEventListener("resize", () => {
+          handleResize();
+        });
+      }
+      
+      // Pokreni sve nakon što se DOM učita
+      window.addEventListener("load", init);
+    })();
+  </script>
+</body>
+</html>

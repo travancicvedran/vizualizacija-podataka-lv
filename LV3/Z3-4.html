@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+    <title>Z3-4</title>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+<script>
+var widthSVG = 800;
+var heightSVG = 600;
+
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", widthSVG)
+    .attr("height", heightSVG)
+
+var materijali = [
+    {tip: "Kruto", boja: "gray", y: heightSVG - 50, odskok: 0.1, trajanje: 200},
+    {tip: "Elasticno", boja: "green", y: heightSVG - 50, odskok: 0.7, trajanje: 400},
+    {tip: "Tekuce", boja: "blue", y: heightSVG - 50, odskok: 0, trajanje: 1000}
+];
+
+var pozicijeX = [150, 400, 650];
+var radijus = 30;
+var pocetniY = 50;
+
+var kruznice = [];
+var pravokutnici = [];
+
+for (var i = 0; i < 3; i++) {
+    svg.append("rect")
+        .attr("x", pozicijeX[i] - 50)
+        .attr("y", materijali[i].y)
+        .attr("width", 100)
+        .attr("height", 50)
+        .attr("fill", materijali[i].boja)
+        .attr("opacity", 0.5);
+    
+    svg.append("text")
+        .attr("x", pozicijeX[i])
+        .attr("y", materijali[i].y + 30)
+        .attr("text-anchor", "middle")
+        .text(materijali[i].tip)
+        .style("fill", "white")
+        .style("font-size", "14px");
+    
+    var kruznic = svg.append("circle")
+        .attr("cx", pozicijeX[i])
+        .attr("cy", pocetniY)
+        .attr("r", radijus)
+        .attr("fill", "red");
+    
+    kruznice.push({
+        element: kruznic,
+        index: i,
+        brzina: 0,
+        pozicijaY: pocetniY
+    });
+}
+
+function pad(kruznic) {
+    var i = kruznic.index;
+    var gravitacija = 0.5;
+    var podlogaY = materijali[i].y - radijus;
+    
+    function animiraj() {
+        kruznic.brzina += gravitacija;
+        kruznic.pozicijaY += kruznic.brzina;
+        
+        if (kruznic.pozicijaY >= podlogaY) {
+            kruznic.pozicijaY = podlogaY;
+            kruznic.brzina = -kruznic.brzina * materijali[i].odskok;
+            
+            if (Math.abs(kruznic.brzina) < 1) {
+                kruznic.brzina = 0;
+                if (materijali[i].tip === "Tekuce") {
+                    kruznic.element.transition()
+                        .duration(2000)
+                        .attr("cy", materijali[i].y + 50)
+                        .attr("opacity", 0.3);
+                }
+                return;
+            }
+        }
+        
+        kruznic.element.attr("cy", kruznic.pozicijaY);
+        
+        if (materijali[i].tip !== "Tekuce" || kruznic.pozicijaY < podlogaY) {
+            requestAnimationFrame(animiraj);
+        }
+    }
+    
+    animiraj();
+}
+
+setTimeout(function() {
+    for (var i = 0; i < kruznice.length; i++) {
+        pad(kruznice[i]);
+    }
+}, 1000);
+
+</script>
+</body>
+</html>

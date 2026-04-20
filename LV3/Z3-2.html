@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+    <title>Z3-2</title>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+<script>
+var widthSVG = 500;
+var heightSVG = 500;
+
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", widthSVG)
+    .attr("height", heightSVG)
+
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function stvoriKvadrat() {
+    var x = randomInt(0, widthSVG - 100);
+    var y = randomInt(0, heightSVG - 100);
+    var trajanjePunjenja = randomInt(2000, 7000);
+    
+    var kvadrat = svg.append("rect")
+        .attr("x", x)
+        .attr("y", y)
+        .attr("width", 100)
+        .attr("height", 100)
+        .attr("fill", "white")
+        .attr("stroke", "blue")
+        .attr("stroke-width", 3);
+    
+    function ciklus() {
+        var novoTrajanjePunjenja = randomInt(2000, 7000);
+        
+        kvadrat.attr("fill", "white")
+            .attr("opacity", 1);
+        
+        kvadrat.transition()
+            .duration(novoTrajanjePunjenja)
+            .attr("fill", "blue")
+            .each("end", function() {
+                kvadrat.transition()
+                    .duration(novoTrajanjePunjenja)
+                    .attr("opacity", 1)
+                    .each("end", function() {
+                        var novoX = randomInt(0, widthSVG - 100);
+                        var novoY = randomInt(0, heightSVG - 100);
+                        kvadrat.attr("x", novoX).attr("y", novoY);
+                        ciklus();
+                    });
+            });
+    }
+    
+    setTimeout(ciklus, 3000);
+}
+
+for (var i = 0; i < 10; i++) {
+    stvoriKvadrat();
+}
+
+</script>
+</body>
+</html>
