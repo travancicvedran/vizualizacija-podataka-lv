@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+    <title>Z5-3</title>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <style>
+        #tooltip {
+            position: absolute;
+            padding: 8px;
+            background: white;
+            border: 1px solid gray;
+            border-radius: 4px;
+            pointer-events: none;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+            translate: 15px 0;
+        }
+        #info-panel {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            width: 250px;
+            padding: 20px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 20;
+        }
+        #info-panel h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #666;
+            padding-bottom: 10px;
+        }
+        #info-panel .population {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="tooltip"></div>
+    <div id="info-panel">
+        <h3 id="county-name"></h3>
+        <div>Populacija:</div>
+        <div class="population" id="county-population"></div>
+    </div>
+<script>
+var width = 960;
+var height = 700;
+var projection = d3.geo.mercator()
+    .center([0, 10])
+    .scale(6000)
+    .translate([17600, 4500])
+    .rotate([-180, 0]);
+var path = d3.geo.path()
+    .projection(projection);
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+
+var tooltip = d3.select("#tooltip");
+var infoPanel = d3.select("#info-panel");
+
+var g = svg.append("g");
+
+var zoom = d3.behavior.zoom()
+    .scaleExtent([1, 8])
+    .on("zoom", function() {
+        g.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    });
+
+svg.call(zoom);
+
+var colorScale = d3.scale.linear()
+    .range(["tomato", "yellow", "limegreen"]);
+
+
+d3.json("cro.json", function(error, cro) {
+var data = topojson.feature(cro, cro.objects.layer1);
+
+var populations = data.features.map(function(d) { return d.properties.population; });
+var minPop = d3.min(populations);
+var maxPop = d3.max(populations);
+
+colorScale.domain([minPop, (minPop + maxPop) / 2, maxPop]);
+
+var states = g.selectAll("path.county")
+.data(data.features)
+.enter()
+.append("path")
+.attr("class", "county")
+.attr("id", function(d) { return d.id; })
+.attr("d", path)
+.style("fill", function(d) {
+    return colorScale(d.properties.population);
+})
+.style("stroke", "gray")
+.style("stroke-width", 1)
+.style("stroke-opacity", 1)
+.on("mouseover", function(d) {
+    tooltip.style("display", "block")
+    .text(d.properties.name);
+})
+.on("mousemove", function() {
+    tooltip.style("left", (d3.event.pageX + 10) + "px")
+    .style("top", (d3.event.pageY - 10) + "px");
+})
+.on("mouseout", function() {
+    tooltip.style("display", "none");
+})
+.on("click", function(d) {
+    d3.event.stopPropagation();
+    
+    infoPanel.style("display", "block");
+    d3.select("#county-name").text(d.properties.name);
+    d3.select("#county-population").text(d.properties.population.toLocaleString());
+    
+});
+});
+
+svg.on("click", function() {
+    infoPanel.style("display", "none");
+    states.style("opacity", 1);
+});
+
+</script>
+</body>
+</html>
